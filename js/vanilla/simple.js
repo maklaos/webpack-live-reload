@@ -1,1 +1,4 @@
-console.log("it_works");
+function log() {
+    console.log("it_works");
+}
+log();

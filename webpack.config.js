@@ -5,14 +5,23 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const BrowserSyncPlugin = require('browser-sync-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const proxy = require('http-proxy-middleware');
+const UglifyJS = require("uglify-es");
 
 const imageProxy = proxy('/demo', {
     target: "https://demo.opencart.com/image/catalog/",
     changeOrigin: true
 });
 
+const PRODUCTION = 'production';
+const DEVELOPMENT = 'development';
+
+let mode = process.env.NODE_ENV === "production" ? PRODUCTION : DEVELOPMENT;
+
 const config = {
-    entry: ['./js/main.js', './scss/main.scss'],
+    entry: {
+        main: ['./js/main.js', './scss/main.scss'],
+        test: ['./scss/test.scss'],
+    },
     output: {
         filename: '[name].js',
         chunkFilename: 'bundle-[name].js',
@@ -48,9 +57,8 @@ const config = {
             ],
             files: [{
                 match: [
-                    'static/compiled/css/main.css',
+                    'static/compiled/css/**',
                     'js/main.js',
-                    'js/vanilla/simple.js',
                     'js/**/*.vue',
                 ],
                 fn: function(event, file) {
@@ -78,9 +86,12 @@ const config = {
             {
                 from: __dirname + '/js/vanilla',
                 to: __dirname + '/static/compiled/js',
-                toType: 'dir'
+                toType: 'dir',
+                transform: function (content, path) {
+                    return UglifyJS.minify(content.toString()).code;
+                },
             }
-        ])
+        ]),
     ],
     module: {
         rules: [
@@ -110,7 +121,7 @@ const config = {
     },
     resolve: {
         alias: {
-            vue: process.argv.includes("--watch") ? 'vue/dist/vue.js' : 'vue/dist/vue.min'
+            'vue$': process.env.NODE_ENV === "production" ? 'vue/dist/vue.min' : 'vue/dist/vue'
         }
     }
 };
